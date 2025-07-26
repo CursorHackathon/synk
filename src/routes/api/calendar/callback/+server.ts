@@ -5,22 +5,22 @@ import { Profile } from '$src/models/profile.model';
 import { auth } from '$src/auth';
 
 export const GET: RequestHandler = async ({ request, url }) => {
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state'); // This contains the userId
+  const error = url.searchParams.get('error');
+
+  if (error) {
+    console.error('Google Calendar OAuth error:', error);
+    return redirect(302, '/settings?calendar_error=access_denied');
+  }
+
+  if (!code || !state) {
+    return redirect(302, '/settings?calendar_error=invalid_callback');
+  }
+
+  const userId = state;
+
   try {
-    const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state'); // This contains the userId
-    const error = url.searchParams.get('error');
-
-    if (error) {
-      console.error('Google Calendar OAuth error:', error);
-      throw redirect(302, '/settings?calendar_error=access_denied');
-    }
-
-    if (!code || !state) {
-      throw redirect(302, '/settings?calendar_error=invalid_callback');
-    }
-
-    const userId = state;
-
     // Exchange authorization code for tokens
     const tokens = await googleCalendarService.exchangeCodeForTokens(code);
 
@@ -34,7 +34,7 @@ export const GET: RequestHandler = async ({ request, url }) => {
       });
 
       if (!session?.user) {
-        throw redirect(302, '/settings?calendar_error=user_not_found');
+        return redirect(302, '/settings?calendar_error=user_not_found');
       }
 
       // Create new profile
@@ -70,17 +70,12 @@ export const GET: RequestHandler = async ({ request, url }) => {
     );
 
     if (success) {
-      throw redirect(302, '/settings?calendar_connected=true');
+      return redirect(302, '/settings?calendar_connected=true');
     } else {
-      throw redirect(302, '/settings?calendar_error=connection_failed');
+      return redirect(302, '/settings?calendar_error=connection_failed');
     }
   } catch (error) {
     console.error('Error in Google Calendar callback:', error);
-    
-    if (error instanceof Response) {
-      throw error; // Re-throw redirect responses
-    }
-    
-    throw redirect(302, '/settings?calendar_error=unknown');
+    return redirect(302, '/settings?calendar_error=unknown');
   }
 }; 
