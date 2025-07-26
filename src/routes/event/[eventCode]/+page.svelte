@@ -7,7 +7,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { Link, CheckCircle, XCircle, Clock, Users } from 'lucide-svelte';
+	import { Link, CheckCircle, XCircle, Clock, Users, ThumbsUp, BarChart3 } from 'lucide-svelte';
 
 	const eventCode = $page.params.eventCode;
 	let event = $state<any>(null);
@@ -24,7 +24,7 @@
 	async function loadEvent() {
 		try {
 			loading = true;
-			const response = await fetch(`/api/events?eventCode=${eventCode}`);
+			const response = await fetch(`/api/events/public/${eventCode}`);
 			const result = await response.json();
 
 			if (!response.ok) {
@@ -32,6 +32,10 @@
 			}
 
 			event = result.event;
+			// Load additional data if needed
+			if (event.hasVoting && event.votingStats) {
+				// Voting stats already loaded from API
+			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load event';
 			toast.error(error);
@@ -267,7 +271,67 @@
 						</div>
 					</div>
 				</CardContent>
-			</Card>
+							</Card>
+
+			<!-- Voting Section -->
+			{#if event.hasVoting && event.voteOptions && event.voteOptions.length > 0}
+				<Card class="shadow-lg">
+					<CardHeader>
+						<CardTitle class="flex items-center gap-2">
+							<ThumbsUp class="h-5 w-5" />
+							Voting Options
+						</CardTitle>
+						<CardDescription>
+							{#if event.votingStats}
+								{event.votingStats.totalVoters} of {event.votingStats.totalInvited} guests have voted ({event.votingStats.votingRate}%)
+							{:else}
+								Guests can vote on these options
+							{/if}
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div class="space-y-4">
+							{#each event.voteOptions as option}
+								{@const stats = event.votingStats?.optionStats[option.id] || { likes: 0, dislikes: 0, total: 0 }}
+								{@const totalVotes = stats.likes + stats.dislikes}
+								{@const likePercent = totalVotes > 0 ? Math.round((stats.likes / totalVotes) * 100) : 0}
+								<div class="p-4 border rounded-lg">
+									<div class="flex items-start gap-3">
+										<span class="text-3xl">{option.image || '🎯'}</span>
+										<div class="flex-1">
+											<h4 class="font-medium text-gray-900 dark:text-white">{option.title}</h4>
+											{#if option.description}
+												<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{option.description}</p>
+											{/if}
+											
+											{#if totalVotes > 0}
+												<div class="mt-3">
+													<div class="flex items-center justify-between text-sm mb-1">
+														<span class="text-gray-600 dark:text-gray-400">{totalVotes} votes</span>
+														<span class="font-medium">{likePercent}% liked</span>
+													</div>
+													<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+														<div 
+															class="bg-green-500 h-2 rounded-full transition-all duration-300"
+															style="width: {likePercent}%"
+														></div>
+													</div>
+													<div class="flex items-center justify-between mt-1 text-xs text-gray-500">
+														<span>{stats.likes} likes</span>
+														<span>{stats.dislikes} dislikes</span>
+													</div>
+												</div>
+											{:else}
+												<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">No votes yet</p>
+											{/if}
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</CardContent>
+				</Card>
+			{/if}
 
 			<!-- Action Buttons -->
 			<div class="flex gap-3 mt-6">

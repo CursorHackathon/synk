@@ -19,6 +19,7 @@ export const GET: RequestHandler = async ({ params }) => {
 
     // Return event with RSVP stats but limited information
     const rsvpStats = event.getRSVPStats();
+    const votingStats = event.hasVoting ? event.getVotingStats() : null;
     
     return json({
       event: {
@@ -30,7 +31,10 @@ export const GET: RequestHandler = async ({ params }) => {
         emails: event.emails, // Guests need to see all emails to find theirs
         rsvps: event.rsvps, // Include RSVP status
         rsvpStats,
-        eventCode: event.eventCode
+        eventCode: event.eventCode,
+        hasVoting: event.hasVoting,
+        voteOptions: event.voteOptions,
+        votingStats
       }
     });
   } catch (error) {

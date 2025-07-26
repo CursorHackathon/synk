@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Calendar, MapPin, Users, CheckCircle, XCircle, Clock } from 'lucide-svelte';
+	import { Calendar, MapPin, Users, CheckCircle, XCircle, Clock, ThumbsUp } from 'lucide-svelte';
 
 	const eventCode = $page.params.eventCode;
 	let event = $state<any>(null);
@@ -65,6 +66,13 @@
 			
 			// Reload event to update RSVP status
 			await loadEvent();
+			
+			// If voting is enabled and user accepted, prompt to vote
+			if (status === 'accepted' && event.hasVoting) {
+				setTimeout(() => {
+					toast.info('You can now vote on options for this event!');
+				}, 1500);
+			}
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Failed to submit RSVP');
 		} finally {
@@ -244,6 +252,40 @@
 						{/if}
 					</CardContent>
 				</Card>
+
+				<!-- Voting Section -->
+				{#if event.hasVoting && selectedEmail && getRSVPStatus(selectedEmail) === 'accepted'}
+					<Card>
+						<CardHeader>
+							<CardTitle class="flex items-center gap-2">
+								<ThumbsUp class="h-5 w-5" />
+								Event Voting
+							</CardTitle>
+							<CardDescription>Vote on options for this event</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+								Help decide by voting on the options below using our swipe interface.
+							</p>
+							<Button 
+								onclick={() => goto(`/event/${eventCode}/vote`)} 
+								class="w-full"
+							>
+								{#snippet children()}
+									<ThumbsUp class="h-4 w-4 mr-2" />
+									Start Voting
+								{/snippet}
+							</Button>
+							{#if event.votingStats}
+								<div class="mt-4 pt-4 border-t">
+									<p class="text-sm text-gray-600 dark:text-gray-400">
+										{event.votingStats.totalVoters} of {event.votingStats.totalInvited} people have voted
+									</p>
+								</div>
+							{/if}
+						</CardContent>
+					</Card>
+				{/if}
 			</div>
 		{/if}
 	</div>

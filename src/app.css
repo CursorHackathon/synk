@@ -1,78 +1,139 @@
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap');
+@font-face {
+	font-family: 'Lexend';
+	src: url('/fonts/Lexend/Lexend-VariableFont_wght.ttf') format('truetype-variations');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 72.2% 50.6%;
-    --destructive-foreground: 0 0% 98%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
-	--sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+	:root {
+		--light-50 : 24 20% 99.5%;
+		--light-100: 24 16.7% 96.9%;
+		--light-200: 24 18.3% 92.1%;
+		--light-300: 24 17.8% 79%;
+		--light-400: 24 17.5% 72%;
+		--light-500: 24 17.3% 64.9%;
+		--light-600: 24 17.3% 56.9%;
+		--light-700: 24 17.6% 45%;
+		--light-800: 24 17.3% 38%;
+		--light-900: 24 17.4% 27%;
+		--light-950: 24 16.4% 25%;
 
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --ring: 0 0% 83.1%;
-	--sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+	
+		--background: var(--light-50);
+		--foreground: var(--light-800);
+
+		--muted: var(--light-100); 
+		--muted-foreground: var(--light-700); 
+
+		--popover: var(--light-50); 
+		--popover-foreground: var(--light-950); 
+
+		--card: var(--light-50); 
+		--card-foreground: var(--light-950); 
+
+		--border: var(--light-300); 
+		--input: var(--light-200); 
+		--ring: var(--light-300); 
+		--radius: 0.45rem; 
+
+		--primary: var(--light-900); 
+		--primary-foreground: var(--light-50); 
+		--secondary: var(--light-200); 
+		--secondary-foreground: var(--light-800); 
+		--accent: var(--light-200); 
+		--accent-foreground: var(--light-900); 
+		--destructive: 0 85% 60%; 
+		--destructive-foreground: 0 0% 98%; 
+		--success: 142 85% 60%; 
+		--success-foreground: 0 0% 98%; 
+		--info: 221 85% 60%; 
+		--info-foreground: 0 0% 98%; 
+		--warning: 38 85% 60%; 
+		--warning-foreground: 0 0% 98%; 
+
+		--sidebar-background: var(--light-100);
+		--sidebar-foreground: var(--light-800);
+		--sidebar-primary: var(--light-900);
+		--sidebar-primary-foreground: var(--light-50);
+		--sidebar-accent: var(--light-200);
+		--sidebar-accent-foreground: var(--light-900);
+		--sidebar-border: var(--light-500);
+		--sidebar-ring: var(--light-400);
+	}
+
+	.dark {
+		/* Component system variables - aligned with dark theme colors */
+		--background: var(--dark-base); /* Using dark-base (180 5% 17%) for background */
+		--foreground: var(--dark-content); /* Using dark-content (60 9% 92%) for foreground */
+		--muted: 180 5% 22%; /* Slightly lighter than dark-base */
+		--muted-foreground: 36 30% 80%; /* Muted version of content-secondary */
+		--popover: var(--dark-800); /* Darker than base - dark-800 (180 6% 13%) */
+		--popover-foreground: var(--dark-content); /* Same as foreground */
+		--card: var(--dark-800); /* Dark card background - dark-800 (180 6% 13%) */
+		--card-foreground: var(--dark-content); /* Same as foreground */
+		--border: var(--dark-600); /* Dark border - dark-600 (180 9% 27%) */
+		--input: var(--dark-600); /* Same as border */
+		--primary: var(--dark-content); /* Using content color as primary - (60 9% 92%) */
+		--primary-foreground: var(--dark-800); /* Dark color on light primary */
+		--secondary: var(--dark-700); /* Dark secondary - dark-700 (180 5% 17%) */
+		--secondary-foreground: var(--dark-100); /* Light on dark secondary - dark-100 (180 4% 77%) */
+		--accent: var(--dark-content-secondary); /* Accent using content-secondary (36 59% 92%) */
+		--accent-foreground: var(--dark-800); /* Dark text on accent */
+		--destructive: 0 62% 70%; /* Darker red for dark mode destructive */
+		--destructive-foreground: 0 0% 98%; /* Light text on destructive */
+		--success: 142 62% 75%; /* Lighter green for dark mode success */
+		--success-foreground: 0 0% 98%; /* Light text on success */
+		--info: 221 62% 75%; /* Lighter blue for dark mode info */
+		--info-foreground: 0 0% 98%; /* Light text on info */
+		--warning: 38 62% 75%; /* Lighter orange for dark mode warning */
+		--warning-foreground: 0 0% 98%; /* Light text on warning */
+		--ring: var(--dark-content-secondary); /* Ring using content-secondary */
+
+		/* Sidebar colors for dark theme */
+		--sidebar-background: var(--dark-900);
+		--sidebar-foreground: var(--dark-100);
+		--sidebar-primary: var(--dark-content);
+		--sidebar-primary-foreground: var(--dark-900);
+		--sidebar-accent: var(--dark-700);
+		--sidebar-accent-foreground: var(--dark-content);
+		--sidebar-border: var(--dark-600);
+		--sidebar-ring: var(--dark-content-secondary);
+
+		/* Dark theme specific colors from tailwind.config.js */
+		--dark-content: 60 9% 92%; /* #EDEDE9 */
+		--dark-content-secondary: 36 59% 92%; /* #F5EBE0 */
+		--dark-base: 180 5% 17%; /* #282D2D */
+
+		/* Dark theme color scales from tailwind.config.js */
+		--dark-50: 180 3% 83%; /* #CED4D4 */
+		--dark-100: 180 4% 77%; /* #C1C8C8 */
+		--dark-200: 180 5% 67%; /* #A6B0B0 */
+		--dark-300: 180 6% 57%; /* #8B9898 */
+		--dark-400: 180 7% 47%; /* #717F7F */
+		--dark-500: 180 9% 37%; /* #596464 */
+		--dark-600: 180 9% 27%; /* #414949 */
+		--dark-700: 180 5% 17%; /* #282D2D - same as dark-base */
+		--dark-800: 180 6% 13%; /* #1F2323 */
+		--dark-900: 180 6% 10%; /* #181B1B */
+		--dark-950: 180 6% 8%; /* #131616 */
+	}
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+	* {
+		@apply border-border;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
 }
 
+body {
+	@apply bg-background text-foreground transition-colors duration-200;
+}

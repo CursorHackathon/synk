@@ -7,7 +7,9 @@
 	import { CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { Separator } from '$lib/components/ui/separator';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { toast } from 'svelte-sonner';
+	import { Plus, X } from 'lucide-svelte';
 
 	const session = authClient.useSession();
 
@@ -20,6 +22,13 @@
 	let emailInput = $state('');
 	let emails = $state<string[]>([]);
 	let isSubmitting = $state(false);
+
+	// Voting state
+	let hasVoting = $state(false);
+	let voteOptions = $state<Array<{id: string; title: string; description: string; image: string}>>([]);
+	let optionTitle = $state('');
+	let optionDescription = $state('');
+	let optionImage = $state('');
 
 	// Add email to the list
 	function addEmail() {
@@ -59,6 +68,33 @@
 		}
 	}
 
+	// Add voting option
+	function addVoteOption() {
+		if (!optionTitle.trim()) {
+			toast.error('Option title is required');
+			return;
+		}
+
+		const newOption = {
+			id: Date.now().toString(),
+			title: optionTitle.trim(),
+			description: optionDescription.trim(),
+			image: optionImage.trim() || '🎯'
+		};
+
+		voteOptions = [...voteOptions, newOption];
+		optionTitle = '';
+		optionDescription = '';
+		optionImage = '';
+		toast.success('Vote option added');
+	}
+
+	// Remove voting option
+	function removeVoteOption(index: number) {
+		voteOptions = voteOptions.filter((_, i) => i !== index);
+		toast.success('Vote option removed');
+	}
+
 	// Submit the form
 	async function handleSubmit() {
 		if (!$session.data?.user?.id) {
@@ -81,6 +117,11 @@
 			return;
 		}
 
+		if (hasVoting && voteOptions.length === 0) {
+			toast.error('Please add at least one voting option');
+			return;
+		}
+
 		isSubmitting = true;
 
 		try {
@@ -95,7 +136,9 @@
 					date,
 					location: location.trim() || undefined,
 					maxAttendees: maxAttendees || undefined,
-					emails
+					emails,
+					hasVoting,
+					voteOptions: hasVoting ? voteOptions : []
 				})
 			});
 
@@ -149,7 +192,7 @@
 							id="title"
 							bind:value={title}
 							placeholder="Enter event title"
-							maxlength="200"
+							maxlength={200}
 							required
 						/>
 					</div>
@@ -161,7 +204,7 @@
 							id="description"
 							bind:value={description}
 							placeholder="Describe your event (optional)"
-							maxlength="1000"
+							maxlength={1000}
 							rows="3"
 							class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 						></textarea>
@@ -186,7 +229,7 @@
 								id="location"
 								bind:value={location}
 								placeholder="Event location (optional)"
-								maxlength="300"
+								maxlength={300}
 							/>
 						</div>
 					</div>
@@ -199,7 +242,7 @@
 							type="number"
 							bind:value={maxAttendees}
 							placeholder="Leave empty for unlimited"
-							min="1"
+							min={1}
 						/>
 					</div>
 
@@ -229,7 +272,9 @@
 								disabled={!emailInput.trim()}
 								variant="outline"
 							>
-								Add Email
+								{#snippet children()}
+									Add Email
+								{/snippet}
 							</Button>
 						</div>
 
@@ -249,9 +294,9 @@
 													onclick={() => removeEmail(index)}
 													class="h-6 w-6 p-0 text-red-500 hover:text-red-700"
 												>
-													<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-													</svg>
+													{#snippet children()}
+														<X class="h-4 w-4" />
+													{/snippet}
 												</Button>
 											</div>
 										{/each}
@@ -272,22 +317,119 @@
 
 					<Separator />
 
+					<!-- Voting Section -->
+					<div class="space-y-4">
+						<div class="flex items-center space-x-2">
+							<Checkbox 
+								id="hasVoting" 
+								bind:checked={hasVoting}
+							/>
+							<Label for="hasVoting" class="text-lg font-medium">
+								Enable Voting
+							</Label>
+						</div>
+						
+						{#if hasVoting}
+							<div class="space-y-4 pl-6">
+								<p class="text-sm text-gray-600 dark:text-gray-400">
+									Add options for guests to vote on using a swipe interface
+								</p>
+
+								<!-- Add Option Form -->
+								<div class="space-y-3 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+									<div class="grid gap-3 md:grid-cols-3">
+										<Input
+											bind:value={optionTitle}
+											placeholder="Option title *"
+											maxlength={200}
+										/>
+										<Input
+											bind:value={optionDescription}
+											placeholder="Description (optional)"
+											maxlength={500}
+										/>
+										<Input
+											bind:value={optionImage}
+											placeholder="Emoji (e.g. 🍕)"
+											maxlength={10}
+										/>
+									</div>
+									<Button 
+										type="button"
+										onclick={addVoteOption}
+										disabled={!optionTitle.trim()}
+										size="sm"
+										variant="outline"
+									>
+										{#snippet children()}
+											<Plus class="h-4 w-4 mr-2" />
+											Add Option
+										{/snippet}
+									</Button>
+								</div>
+
+								<!-- Options List -->
+								{#if voteOptions.length > 0}
+									<div class="space-y-2">
+										<Label>Vote Options ({voteOptions.length})</Label>
+										<div class="space-y-2">
+											{#each voteOptions as option, index}
+												<div class="flex items-center justify-between p-3 border rounded-lg">
+													<div class="flex items-center gap-3">
+														<span class="text-2xl">{option.image}</span>
+														<div>
+															<p class="font-medium">{option.title}</p>
+															{#if option.description}
+																<p class="text-sm text-gray-600 dark:text-gray-400">{option.description}</p>
+															{/if}
+														</div>
+													</div>
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														onclick={() => removeVoteOption(index)}
+														class="text-red-500 hover:text-red-700"
+													>
+														{#snippet children()}
+															<X class="h-4 w-4" />
+														{/snippet}
+													</Button>
+												</div>
+											{/each}
+										</div>
+									</div>
+								{:else}
+									<div class="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
+										No voting options added yet
+									</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
+
+					<Separator />
+
 					<!-- Submit Button -->
 					<div class="flex gap-3">
 						<Button
 							type="button"
 							variant="outline"
-							onclick={() => goto('/')}
+							onclick={() => goto('/dash')}
 							class="flex-1"
 						>
-							Cancel
+							{#snippet children()}
+								Cancel
+							{/snippet}
 						</Button>
 						<Button
 							type="submit"
-							disabled={isSubmitting || !title.trim() || !date || emails.length === 0}
+							disabled={isSubmitting || !title.trim() || !date || emails.length === 0 || (hasVoting && voteOptions.length === 0)}
 							class="flex-1"
 						>
-							{isSubmitting ? 'Creating Event...' : 'Create Event'}
+							{#snippet children()}
+								{isSubmitting ? 'Creating Event...' : 'Create Event'}
+							{/snippet}
 						</Button>
 					</div>
 				</form>

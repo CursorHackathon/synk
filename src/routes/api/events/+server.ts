@@ -14,7 +14,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     await connectDB();
     
     const body = await request.json();
-    const { title, description, date, location, emails, maxAttendees } = body;
+    const { title, description, date, location, emails, maxAttendees, hasVoting, voteOptions } = body;
 
     // Validate required fields
     if (!title || !date || !emails || !Array.isArray(emails) || emails.length === 0) {
@@ -69,7 +69,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       emails: uniqueEmails,
       eventCode: eventCode!,
       createdBy: user.id,
-      maxAttendees
+      maxAttendees,
+      hasVoting: hasVoting || false,
+      voteOptions: voteOptions || []
     });
 
     const savedEvent = await newEvent.save();
@@ -120,6 +122,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
       const user = await locals.user;
       const isCreator = user?.id && event.createdBy === user.id;
       
+      const votingStats = event.hasVoting ? event.getVotingStats() : null;
+      
       return json({
         success: true,
         event: {
@@ -133,6 +137,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
           maxAttendees: event.maxAttendees,
           rsvpStats: event.getRSVPStats(),
           createdAt: event.createdAt,
+          hasVoting: event.hasVoting,
+          voteOptions: isCreator ? event.voteOptions : undefined,
+          votingStats: isCreator ? votingStats : undefined,
           // Include emails and rsvps if user is the creator
           emails: isCreator ? event.emails : undefined,
           rsvps: isCreator ? event.rsvps : undefined

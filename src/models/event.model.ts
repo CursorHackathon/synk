@@ -1,5 +1,21 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IVoteOption {
+  id: string;
+  title: string;
+  description?: string;
+  image?: string; // Can be emoji or image URL
+}
+
+export interface IVote {
+  email: string;
+  votes: {
+    optionId: string;
+    vote: 'like' | 'dislike';
+  }[];
+  votedAt: Date;
+}
+
 export interface IEvent extends Document {
   title: string;
   description?: string;
@@ -14,9 +30,59 @@ export interface IEvent extends Document {
     status: 'pending' | 'accepted' | 'declined';
     respondedAt?: Date;
   }>;
+  // Voting fields
+  hasVoting: boolean;
+  voteOptions: IVoteOption[];
+  votes: IVote[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+const VoteOptionSchema: Schema = new Schema({
+  id: {
+    type: String,
+    required: true
+  },
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: [200, 'Option title cannot exceed 200 characters']
+  },
+  description: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Option description cannot exceed 500 characters']
+  },
+  image: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Image string cannot exceed 100 characters']
+  }
+}, { _id: false });
+
+const VoteSchema: Schema = new Schema({
+  email: {
+    type: String,
+    required: true,
+    lowercase: true
+  },
+  votes: [{
+    optionId: {
+      type: String,
+      required: true
+    },
+    vote: {
+      type: String,
+      enum: ['like', 'dislike'],
+      required: true
+    }
+  }],
+  votedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: false });
 
 const EventSchema: Schema = new Schema({
   title: {
@@ -75,7 +141,14 @@ const EventSchema: Schema = new Schema({
     respondedAt: {
       type: Date
     }
-  }]
+  }],
+  // Voting fields
+  hasVoting: {
+    type: Boolean,
+    default: false
+  },
+  voteOptions: [VoteOptionSchema],
+  votes: [VoteSchema]
 }, {
   timestamps: true
 });
@@ -126,9 +199,34 @@ EventSchema.methods.addRSVP = function(email: string, status: 'accepted' | 'decl
   return this.save();
 };
 
+// Instance method to add or update user votes
+EventSchema.methods.addVotes = function(email: string, votes: Array<{ optionId: string; vote: 'like' | 'dislike' }>) {
+  const existingVote = this.votes.find((v: any) => v.email === email.toLowerCase());
+  
+  if (existingVote) {
+    existingVote.votes = votes;
+    existingVote.votedAt = new Date();
+  } else {
+    this.votes.push({
+      email: email.toLowerCase(),
+      votes,
+      votedAt: new Date()
+    });
+  }
+  
+  return this.save();
+};
+
 // Instance method to get RSVP statistics
 EventSchema.methods.getRSVPStats = function() {
-  const stats = {
+  const stats: {
+    total: number;
+    pending: number;
+    accepted: number;
+    declined: number;
+    responseRate: number;
+    [key: string]: number;
+  } = {
     total: this.emails.length,
     pending: 0,
     accepted: 0,
@@ -137,13 +235,46 @@ EventSchema.methods.getRSVPStats = function() {
   };
   
   this.rsvps.forEach((rsvp: any) => {
-    stats[rsvp.status]++;
+    if (rsvp.status === 'pending' || rsvp.status === 'accepted' || rsvp.status === 'declined') {
+      stats[rsvp.status]++;
+    }
   });
   
   stats.responseRate = this.rsvps.length > 0 ? 
     Math.round((this.rsvps.length / stats.total) * 100) : 0;
   
   return stats;
+};
+
+// Instance method to get voting statistics
+EventSchema.methods.getVotingStats = function() {
+  const optionStats: { [key: string]: { likes: number; dislikes: number; total: number } } = {};
+  
+  // Initialize stats for each option
+  this.voteOptions.forEach((option: IVoteOption) => {
+    optionStats[option.id] = { likes: 0, dislikes: 0, total: 0 };
+  });
+  
+  // Count votes
+  this.votes.forEach((userVote: IVote) => {
+    userVote.votes.forEach(vote => {
+      if (optionStats[vote.optionId]) {
+        if (vote.vote === 'like') {
+          optionStats[vote.optionId].likes++;
+        } else {
+          optionStats[vote.optionId].dislikes++;
+        }
+        optionStats[vote.optionId].total++;
+      }
+    });
+  });
+  
+  return {
+    totalVoters: this.votes.length,
+    totalInvited: this.emails.length,
+    votingRate: this.emails.length > 0 ? Math.round((this.votes.length / this.emails.length) * 100) : 0,
+    optionStats
+  };
 };
 
 export const Event = mongoose.models.Event || mongoose.model<IEvent>('Event', EventSchema);
