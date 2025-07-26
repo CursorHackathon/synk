@@ -4,16 +4,21 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Card from '$lib/components/ui/card/card.svelte';
 	import { CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Badge } from '$lib/components/ui/badge';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { Link, CheckCircle, XCircle, Clock, Users } from 'lucide-svelte';
 
 	const eventCode = $page.params.eventCode;
 	let event = $state<any>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	let rsvpLink = $state('');
 
 	onMount(async () => {
 		await loadEvent();
+		// Generate RSVP link
+		rsvpLink = `${window.location.origin}/event/${eventCode}/rsvp`;
 	});
 
 	async function loadEvent() {
@@ -43,6 +48,16 @@
 		navigator.clipboard.writeText(eventCode);
 		toast.success('Event code copied to clipboard!');
 	}
+
+	function copyRSVPLink() {
+		navigator.clipboard.writeText(rsvpLink);
+		toast.success('RSVP link copied to clipboard!');
+	}
+
+	function getRSVPStatus(email: string) {
+		const rsvp = event?.rsvps?.find((r: any) => r.email === email);
+		return rsvp?.status || 'pending';
+	}
 </script>
 
 <svelte:head>
@@ -69,7 +84,9 @@
 						<h2 class="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Event Not Found</h2>
 						<p class="mt-2 text-gray-600 dark:text-gray-400">{error}</p>
 						<Button onclick={() => goto('/')} class="mt-4">
-							Go Home
+							{#snippet children()}
+								Go Home
+							{/snippet}
 						</Button>
 					</div>
 				</CardContent>
@@ -88,23 +105,57 @@
 							Event Created Successfully!
 						</h3>
 						<p class="mt-1 text-sm text-green-700 dark:text-green-300">
-							Your event has been created and invitations will be sent to {event.emailCount} recipients.
+							Share the RSVP link below with your guests so they can respond to your invitation.
 						</p>
 					</div>
 				</div>
 			</div>
 
+			<!-- Shareable Link Section -->
+			<Card class="shadow-lg mb-6">
+				<CardHeader>
+					<CardTitle class="flex items-center gap-2">
+						<Link class="h-5 w-5" />
+						Share Your Event
+					</CardTitle>
+					<CardDescription>Send this link to your guests so they can RSVP</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div class="space-y-4">
+						<div class="flex gap-2">
+							<input
+								type="text"
+								value={rsvpLink}
+								readonly
+								class="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm font-mono"
+							/>
+							<Button onclick={copyRSVPLink} variant="outline">
+								{#snippet children()}
+									<Link class="h-4 w-4 mr-2" />
+									Copy Link
+								{/snippet}
+							</Button>
+						</div>
+						<div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+							<span>Event Code: <span class="font-mono font-medium">{eventCode}</span></span>
+							<Button variant="ghost" size="sm" onclick={copyEventCode}>
+								{#snippet children()}
+									Copy Code
+								{/snippet}
+							</Button>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+
 			<!-- Event Details -->
-			<Card class="shadow-lg">
+			<Card class="shadow-lg mb-6">
 				<CardHeader>
 					<div class="flex items-center justify-between">
 						<div>
 							<CardTitle class="text-2xl">{event.title}</CardTitle>
-							<CardDescription class="mt-1">Event Code: {eventCode}</CardDescription>
+							<CardDescription class="mt-1">Event Details</CardDescription>
 						</div>
-						<Button variant="outline" onclick={copyEventCode}>
-							Copy Code
-						</Button>
 					</div>
 				</CardHeader>
 				
@@ -146,7 +197,7 @@
 					<!-- RSVP Statistics -->
 					{#if event.rsvpStats}
 						<div>
-							<h4 class="font-medium text-gray-900 dark:text-white">RSVP Status</h4>
+							<h4 class="font-medium text-gray-900 dark:text-white">RSVP Summary</h4>
 							<div class="mt-2 grid grid-cols-4 gap-4 text-center">
 								<div class="rounded-md bg-gray-100 dark:bg-gray-800 p-3">
 									<div class="text-lg font-semibold text-gray-900 dark:text-white">{event.rsvpStats.total}</div>
@@ -170,18 +221,67 @@
 							</p>
 						</div>
 					{/if}
+				</CardContent>
+			</Card>
 
-					<!-- Action Buttons -->
-					<div class="flex gap-3 pt-4">
-						<Button onclick={() => goto('/')} variant="outline" class="flex-1">
-							Back to Home
-						</Button>
-						<Button onclick={() => goto('/event/new')} class="flex-1">
-							Create Another Event
-						</Button>
+			<!-- Guest List -->
+			<Card class="shadow-lg">
+				<CardHeader>
+					<CardTitle class="flex items-center gap-2">
+						<Users class="h-5 w-5" />
+						Guest List
+					</CardTitle>
+					<CardDescription>Track who has responded to your invitation</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div class="max-h-96 overflow-y-auto">
+						<div class="space-y-2">
+							{#each event.emails as email}
+								{@const status = getRSVPStatus(email)}
+								<div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+									<span class="font-mono text-sm">{email}</span>
+									{#if status === 'accepted'}
+										<Badge class="bg-green-100 text-green-800">
+											{#snippet children()}
+												<CheckCircle class="h-3 w-3 mr-1" />
+												Attending
+											{/snippet}
+										</Badge>
+									{:else if status === 'declined'}
+										<Badge class="bg-red-100 text-red-800">
+											{#snippet children()}
+												<XCircle class="h-3 w-3 mr-1" />
+												Not Attending
+											{/snippet}
+										</Badge>
+									{:else}
+										<Badge variant="outline">
+											{#snippet children()}
+												<Clock class="h-3 w-3 mr-1" />
+												Pending
+											{/snippet}
+										</Badge>
+									{/if}
+								</div>
+							{/each}
+						</div>
 					</div>
 				</CardContent>
 			</Card>
+
+			<!-- Action Buttons -->
+			<div class="flex gap-3 mt-6">
+				<Button onclick={() => goto('/dash')} variant="outline" class="flex-1">
+					{#snippet children()}
+						Back to Dashboard
+					{/snippet}
+				</Button>
+				<Button onclick={() => goto('/event/new')} class="flex-1">
+					{#snippet children()}
+						Create Another Event
+					{/snippet}
+				</Button>
+			</div>
 		{/if}
 	</div>
 </div> 

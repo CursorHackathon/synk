@@ -17,11 +17,14 @@
 		Settings,
 		Plus,
 		TrendingUp,
-		Loader2
+		Loader2,
+		Calendar,
+		ExternalLink
 	} from 'lucide-svelte';
 
 	let { data } = $props();
 	let loading = $state(true);
+	let events = $state<any[]>([]);
 
 	// Use Better Auth reactive session
 	const session = authClient.useSession();
@@ -37,8 +40,39 @@
 		goto('/event/new');
 	}
 
-	onMount(() => {
+	function viewEvent(eventCode: string) {
+		goto(`/event/${eventCode}`);
+	}
+
+	async function loadEvents() {
+		try {
+			const response = await fetch('/api/events');
+			const result = await response.json();
+
+			if (response.ok) {
+				events = result.events || [];
+			} else {
+				console.error('Failed to load events:', result.error);
+			}
+		} catch (error) {
+			console.error('Error loading events:', error);
+		}
+	}
+
+	function formatDate(dateString: string) {
+		return new Date(dateString).toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
+	onMount(async () => {
 		console.log('Dashboard component mounted');
+		// Load user's events
+		await loadEvents();
 		// Simple loading timeout
 		setTimeout(() => {
 			loading = false;
@@ -122,12 +156,12 @@
 			<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
 				<Card>
 					<CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle class="text-sm font-medium">Account Status</CardTitle>
-						<TrendingUp class="h-4 w-4 text-muted-foreground" />
+						<CardTitle class="text-sm font-medium">Total Events</CardTitle>
+						<Calendar class="h-4 w-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
-						<div class="text-2xl font-bold">Active</div>
-						<p class="text-xs text-muted-foreground">Your account is active</p>
+						<div class="text-2xl font-bold">{events.length}</div>
+						<p class="text-xs text-muted-foreground">Events created</p>
 					</CardContent>
 				</Card>
 
@@ -156,6 +190,46 @@
 					</CardContent>
 				</Card>
 			</div>
+
+			<!-- Your Events -->
+			{#if events.length > 0}
+				<Card>
+					<CardHeader>
+						<CardTitle>Your Events</CardTitle>
+						<CardDescription>Manage and track your created events</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div class="space-y-3">
+							{#each events as event}
+								<div class="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+									<div class="space-y-1">
+										<h3 class="font-medium text-gray-900 dark:text-white">{event.title}</h3>
+										<div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+											<span>{formatDate(event.date)}</span>
+											{#if event.location}
+												<span>• {event.location}</span>
+											{/if}
+											<span>• {event.emailCount} guests</span>
+										</div>
+									</div>
+									<div class="flex items-center gap-2">
+										<Badge variant="outline">
+											{#snippet children()}
+												{event.eventCode}
+											{/snippet}
+										</Badge>
+										<Button size="sm" variant="ghost" onclick={() => viewEvent(event.eventCode)}>
+											{#snippet children()}
+												<ExternalLink class="h-4 w-4" />
+											{/snippet}
+										</Button>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</CardContent>
+				</Card>
+			{/if}
 		</div>
 	</div>
 {/if}

@@ -116,6 +116,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         return json({ error: 'Event not found' }, { status: 404 });
       }
       
+      // Check if the user is the event creator
+      const user = await locals.user;
+      const isCreator = user?.id && event.createdBy === user.id;
+      
       return json({
         success: true,
         event: {
@@ -128,7 +132,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
           emailCount: event.emails.length,
           maxAttendees: event.maxAttendees,
           rsvpStats: event.getRSVPStats(),
-          createdAt: event.createdAt
+          createdAt: event.createdAt,
+          // Include emails and rsvps if user is the creator
+          emails: isCreator ? event.emails : undefined,
+          rsvps: isCreator ? event.rsvps : undefined
         }
       });
     }
